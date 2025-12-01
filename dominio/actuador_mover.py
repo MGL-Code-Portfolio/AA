@@ -4,13 +4,20 @@ class ActuadorMover(Actuador):
     def executar(self, accao, agente, ambiente):
         x, y = agente.posicao
         
-        if accao == 'N': y -= 1
-        elif accao == 'S': y += 1
-        elif accao == 'O': x -= 1
-        elif accao == 'E': x += 1
+        dx, dy = 0, 0
         
-        # Validar limites
-        x = max(0, min(x, ambiente.largura - 1))
-        y = max(0, min(y, ambiente.altura - 1))
+        if accao in ['N', 'CIMA', 'MOVER_CIMA']: dy = -1
+        elif accao in ['S', 'BAIXO', 'MOVER_BAIXO']: dy = 1
+        elif accao in ['O', 'ESQUERDA', 'MOVER_ESQUERDA']: dx = -1
+        elif accao in ['E', 'DIREITA', 'MOVER_DIREITA']: dx = 1
         
-        agente.posicao = (x, y)
+        nx, ny = x + dx, y + dy
+        
+        # Validar limites do ambiente (Grelha)
+        if 0 <= nx < ambiente.largura and 0 <= ny < ambiente.altura:
+            # Validar Obstáculos (se o ambiente tiver essa info)
+            if hasattr(ambiente, 'obstaculos') and (nx, ny) in ambiente.obstaculos:
+                return # Bateu na parede, não move
+            
+            # Movimento válido
+            agente.posicao = (nx, ny)
