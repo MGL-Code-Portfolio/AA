@@ -22,3 +22,8 @@ class Ambiente(ABC):
     def estado_global(self):
         """Retorna representação para visualização."""
         pass
+    
+    @abstractmethod
+    def atualizacao(self):
+        """Passo 4 do Diagrama: Dinâmica do ambiente"""
+        pass

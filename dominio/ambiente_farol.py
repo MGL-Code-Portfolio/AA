@@ -28,3 +28,6 @@ class AmbienteFarol(Ambiente):
             grelha[ay][ax] = marcador
             
         return "\n".join(["".join(linha) for linha in grelha])
+    
+    def atualizacao(self):
+        pass # No Farol o ambiente é estático, por isso não faz nada, mas cumpre a interface.
