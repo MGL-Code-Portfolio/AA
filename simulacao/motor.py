@@ -7,56 +7,46 @@ class MotorDeSimulacao:
         self.visualizador = visualizador if visualizador else Visualizador()
 
     def executa_episodio(self, max_passos, visual=False, delay=0.1):
-        # --- 1. RESET DO ESTADO ---
+        # 1. RESET
         self.ambiente.passo_atual = 0
         self.ambiente.objetivo_alcancado = False
         
-        # Reset para Recoleção (Recursos)
         if hasattr(self.ambiente, 'pontuacao_total'):
             self.ambiente.pontuacao_total = 0
-            
-            # CORREÇÃO AQUI: É OBRIGATÓRIO REGENERAR RECURSOS
-            # Se não fizermos isto, a lista fica vazia porque o agente comeu tudo no episódio anterior
             if hasattr(self.ambiente, 'recursos') and hasattr(self.ambiente, '_gerar_recursos'):
-                self.ambiente.recursos.clear() # Limpa o que sobrou
-                self.ambiente._gerar_recursos() # Cria novos recursos
+                self.ambiente.recursos.clear()
+                self.ambiente._gerar_recursos()
 
-        # Reset para Labirinto (Opcional: Novo labirinto a cada episódio)
-        # Se quiseres que o labirinto mude sempre, descomenta isto:
-        # if hasattr(self.ambiente, 'gerar_obstaculos_validos'):
-        #     self.ambiente.gerar_obstaculos_validos()
-
-        # Reset dos Agentes
         for agente in self.ambiente.agentes:
-            agente.posicao = (0, 0)
-            agente.recompensa_acumulada = 0
-            
-            # O agente não pode começar o jogo já a carregar coisas
-            if hasattr(agente, 'tem_recurso'):
-                agente.tem_recurso = False
+            agente.reset_stats() # <--- NOVO: Limpa stats do agente
+            # Regista a posição inicial como visitada
+            agente.stats["celulas_visitadas"].add(agente.posicao)
 
-        # --- 2. CICLO PRINCIPAL ---
+        # 2. CICLO
         while self.ambiente.passo_atual < max_passos:
             self.ambiente.passo_atual += 1
-            
-            # Atualizar (Dinâmica)
             self.ambiente.atualizacao()
 
-            # Perceção e Decisão
             accoes = {}
             for agente in self.ambiente.agentes:
                 accoes[agente] = agente.age(self.ambiente)
 
-            # Execução
             terminou_simulacao = False
             for agente, accao in accoes.items():
                 recompensa, fim = self.ambiente.agir(accao, agente)
                 agente.avaliacaoEstadoAtual(recompensa, self.ambiente)
                 
-                if fim:
-                    terminou_simulacao = True
+                # --- ATUALIZAÇÃO DE MÉTRICAS ---
+                agente.stats["passos_episodio"] += 1
+                agente.stats["celulas_visitadas"].add(agente.posicao)
+                
+                # Se a recompensa for -0.5 (penalização de parede definida nos ambientes), conta colisão
+                if recompensa == -0.5:
+                    agente.stats["colisoes"] += 1
+                # -------------------------------
 
-            # Visualização
+                if fim: terminou_simulacao = True
+
             if visual:
                 self.visualizador.renderizar(self.ambiente)
                 time.sleep(delay)

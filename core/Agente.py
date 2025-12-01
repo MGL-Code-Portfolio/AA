@@ -11,10 +11,28 @@ class Agente:
         self.actuador: Actuador = None
         self.posicao = (0, 0)
         
-        # Memória de curto prazo
+        # Estado de Aprendizagem
         self.recompensa_acumulada = 0.0
         self.ultimo_estado = None
         self.ultima_accao = None
+
+        # --- NOVAS ESTATÍSTICAS (Para o Relatório) ---
+        self.stats = {
+            "colisoes": 0,
+            "celulas_visitadas": set(), # Guarda coordenadas únicas
+            "passos_episodio": 0
+        }
+
+    def reset_stats(self):
+        """Reinicia estatísticas no início de cada episódio"""
+        self.stats = {
+            "colisoes": 0,
+            "celulas_visitadas": set(),
+            "passos_episodio": 0
+        }
+        self.recompensa_acumulada = 0
+        self.posicao = (0, 0)
+        if hasattr(self, 'tem_recurso'): self.tem_recurso = False
 
     def instala(self, sensor: Sensor):
         self.sensores.append(sensor)
