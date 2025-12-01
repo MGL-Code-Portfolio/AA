@@ -34,3 +34,11 @@ class SensorVisaoRecurso(Sensor):
         dy = 1 if target_y > y else (-1 if target_y < y else 0)
         
         return {"dir_x": dx, "dir_y": dy}
+    
+
+class SensorEstadoInterno(Sensor):
+    """Deteta se o agente está a carregar um recurso (para Recoleção)."""
+    def detetar(self, ambiente, agente):
+        # Verifica se o atributo existe, se não, assume False
+        tem_recurso = getattr(agente, 'tem_recurso', False)
+        return {"tem_recurso": int(tem_recurso)}

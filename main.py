@@ -20,8 +20,8 @@ from dominio.politica_aleatoria import PoliticaAleatoria
 
 # --- Imports Sensores ---
 from dominio.sensor_farol import SensorDireccaoFarol
-from dominio.sensor_comum import SensorPosicao, SensorEstadoInterno
-from dominio.sensor_recolecao import SensorVisaoRecurso
+from dominio.sensor_comum import SensorPosicao
+from dominio.sensor_recolecao import SensorVisaoRecurso, SensorEstadoInterno
 
 def limpar_consola():
     os.system('cls' if os.name == 'nt' else 'clear')
