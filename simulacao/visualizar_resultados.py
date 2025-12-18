@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-def plot_curva_aprendizagem(ficheiro_csv='resultados_treino.csv'):
+def plot_curva_aprendizagem(ambiente, ficheiro_csv):
     
     if not os.path.exists(ficheiro_csv):
         print(f"Erro: O ficheiro '{ficheiro_csv}' não foi encontrado.")
@@ -28,10 +28,6 @@ def plot_curva_aprendizagem(ficheiro_csv='resultados_treino.csv'):
     plt.legend()
     plt.tight_layout()
 
-    nome_grafico = 'curva_aprendizagem_recompensa.png'
+    nome_grafico = ambiente.replace(" ", "_") + "_curva_aprendizagem.png"
     plt.savefig(nome_grafico)
     print(f"\nGráfico da curva de aprendizagem salvo como '{nome_grafico}'")
-
-if __name__ == "__main__":
-    nome_ficheiro = input("Insira o nome do ficheiro CSV para analisar (default: resultados_treino.csv): ") or "resultados_treino.csv"
-    plot_curva_aprendizagem(nome_ficheiro)

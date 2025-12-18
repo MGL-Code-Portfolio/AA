@@ -43,15 +43,15 @@ class AmbienteRecolecao(Ambiente):
             return -1.0, False # penalização por colisão com limites
 
         # validação de Colisão com outros Agentes
-        for outro_agente in self.agentes:
-            if agente.id == outro_agente.id:
-                continue # não verificar colisão consigo mesmo
+        #for outro_agente in self.agentes:
+            #if agente.id == outro_agente.id:
+               # continue # não verificar colisão consigo mesmo
             
-            if agente.posicao == outro_agente.posicao:
-                agente.posicao = posicao_anterior # reverte o movimento
-                agente.stats['colisoes'] += 1
-                outro_agente.stats['colisoes'] += 1 # o outro agente também colidiu
-                return -1.0, False # penaliza o agente que se moveu
+          #  if agente.posicao == outro_agente.posicao:
+           #     agente.posicao = posicao_anterior # reverte o movimento
+            #    agente.stats['colisoes'] += 1
+            #    outro_agente.stats['colisoes'] += 1 # o outro agente também colidiu
+            #    return -1.0, False # penaliza o agente que se moveu
 
 
         # apanhar Recurso (Se estiver em cima e não tiver carga)

@@ -2,7 +2,7 @@ import csv
 import os
 
 class Logger:
-    def __init__(self, nome_ficheiro="dados_simulacao.csv"):
+    def __init__(self, nome_ficheiro):
         self.nome_ficheiro = nome_ficheiro
         self.historico = []
         self.limpar_ficheiro_anterior()

@@ -90,7 +90,7 @@ def criar_ambiente_e_agente(tipo_amb, tipo_pol, largura, altura, n_agentes):
             sensores.append(SensorPosicao()) 
         elif tipo_amb == '2':
             sensores.append(SensorPosicao())
-            sensores.append(SensorDireccaoFarol()) 
+            #sensores.append(SensorDireccaoFarol())
         elif tipo_amb == '3':
             sensores.append(SensorPosicao())
             sensores.append(SensorEstadoInterno())
@@ -154,7 +154,7 @@ def main():
     env = criar_ambiente_e_agente(tipo_amb, tipo_pol, w, h, n_agentes)
     gui = VisualizadorGUI(w, h)
     motor = MotorDeSimulacao(env, visualizador=gui)
-    logger = Logger("resultados_treino.csv")
+    logger = Logger(env.__class__.__name__ + "_simulacao.csv")
 
     # auxiliares para decidir fases
     executar_treino = (modo_exec in ['1', '2']) and (tipo_pol == '1')
@@ -234,7 +234,9 @@ def main():
     
     # FASE 3: VISUALIZAÇÃO DOS RESULTADOS DE TREINO 
     if executar_treino:
-        plot_curva_aprendizagem("resultados_treino.csv")
+        plot_curva_aprendizagem("Ambiente_Farol","AmbienteFarol_simulacao.csv")
+        plot_curva_aprendizagem("Ambiente_Labirinto","AmbienteLabirinto_simulacao.csv")
+        plot_curva_aprendizagem("Ambiente_Recolecao","AmbienteRecolecao_simulacao.csv")
 
     print("\nSimulação Terminada.")
 
