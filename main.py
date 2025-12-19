@@ -18,7 +18,7 @@ from dominio.politica_aleatoria import PoliticaAleatoria
 
 from dominio.sensor_farol import SensorDireccaoFarol
 from dominio.sensor_comum import SensorPosicao
-from simulacao.visualizar_resultados import plot_curva_aprendizagem
+from simulacao.visualizar_resultados import plot_curva_aprendizagem, gerar_heatmap_qtable
 from dominio.sensor_recolecao import SensorEstadoInterno, SensorVisaoRecurso
 
 def limpar_consola():
@@ -156,6 +156,22 @@ def main():
     motor = MotorDeSimulacao(env, visualizador=gui)
     logger = Logger(env.__class__.__name__ + "_simulacao.csv")
 
+    # CARREGAR Q-TABLE SE EXISTIR E FOR Q-LEARNING
+    if tipo_pol == '1':
+        # Verifica se existe pelo menos um ficheiro para o primeiro agente
+        exemplo_ficheiro = f"qtable_{env.__class__.__name__}_ag1.pkl"
+        carregar = False
+        if os.path.exists(exemplo_ficheiro) or (n_agentes > 0 and os.path.exists(f"qtable_{env.__class__.__name__}_ag1.pkl")):
+             resp = input(f"\n[PERSISTÊNCIA] Encontrada tabela salva. Deseja carregar? (s/n): ")
+             if resp.lower() == 's':
+                 carregar = True
+
+        if carregar:
+            for ag in env.agentes:
+                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
+                if hasattr(ag.politica, 'carregar_tabela'):
+                    ag.politica.carregar_tabela(nome_fich)
+
     # auxiliares para decidir fases
     executar_treino = (modo_exec in ['1', '2']) and (tipo_pol == '1')
     executar_teste = (modo_exec in ['1', '3'])
@@ -182,9 +198,17 @@ def main():
 
         print(f"[MODO APRENDIZAGEM] Concluído em {time.time()-start:.2f}s")
         logger.exportar_csv()
+
+        # GUARDAR Q-TABLE NO FIM DO TREINO
+        print("\n[PERSISTÊNCIA] A guardar tabelas Q...")
+        for ag in env.agentes:
+            if hasattr(ag.politica, 'guardar_tabela'):
+                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
+                ag.politica.guardar_tabela(nome_fich)
+
     else:
         if tipo_pol == '1' and modo_exec == '3':
-            print("\n[AVISO] A executar Q-Learning sem treino prévio. O comportamento será aleatório!")
+            print("\n[AVISO] A executar Q-Learning sem treino prévio. O comportamento será aleatório (ou carregado se escolheu sim).")
 
     # FASE 2: TESTE E AVALIAÇÃO
     if executar_teste:
@@ -233,10 +257,19 @@ def main():
         apresentar_metricas_finais(historico_testes, tipo_amb)
     
     # FASE 3: VISUALIZAÇÃO DOS RESULTADOS DE TREINO 
-    if executar_treino:
-        plot_curva_aprendizagem("Ambiente_Farol","AmbienteFarol_simulacao.csv")
-        plot_curva_aprendizagem("Ambiente_Labirinto","AmbienteLabirinto_simulacao.csv")
-        plot_curva_aprendizagem("Ambiente_Recolecao","AmbienteRecolecao_simulacao.csv")
+    if executar_treino or (tipo_pol == '1' and os.path.exists(f"qtable_{env.__class__.__name__}_ag1.pkl")):
+        print("\n[VISUALIZAÇÃO] A gerar gráficos...")
+        if executar_treino:
+            plot_curva_aprendizagem("Ambiente_Farol","AmbienteFarol_simulacao.csv")
+            plot_curva_aprendizagem("Ambiente_Labirinto","AmbienteLabirinto_simulacao.csv")
+            plot_curva_aprendizagem("Ambiente_Recolecao","AmbienteRecolecao_simulacao.csv")
+
+        # Gerar Heatmaps para os agentes Q-Learning
+        if tipo_pol == '1':
+            for ag in env.agentes:
+                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
+                nome_amb_agente = f"{env.__class__.__name__}_Agente{ag.id}"
+                gerar_heatmap_qtable(nome_amb_agente, nome_fich, w, h)
 
     print("\nSimulação Terminada.")
 
