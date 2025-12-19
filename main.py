@@ -18,7 +18,7 @@ from dominio.politica_aleatoria import PoliticaAleatoria
 
 from dominio.sensor_farol import SensorDireccaoFarol
 from dominio.sensor_comum import SensorPosicao
-from simulacao.visualizar_resultados import plot_curva_aprendizagem, gerar_heatmap_qtable
+from simulacao.visualizar_resultados import plot_curva_aprendizagem, gerar_heatmap_qtable, gerar_mapa_politica
 from dominio.sensor_recolecao import SensorEstadoInterno, SensorVisaoRecurso
 
 def limpar_consola():
@@ -270,6 +270,7 @@ def main():
                 nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
                 nome_amb_agente = f"{env.__class__.__name__}_Agente{ag.id}"
                 gerar_heatmap_qtable(nome_amb_agente, nome_fich, w, h)
+                gerar_mapa_politica(nome_amb_agente, nome_fich, w, h)
 
     print("\nSimulação Terminada.")
 

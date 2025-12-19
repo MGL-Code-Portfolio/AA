@@ -104,3 +104,98 @@ def gerar_heatmap_qtable(ambiente_nome, arquivo_qtable, largura, altura):
     plt.savefig(nome_arquivo)
     plt.close()
     print(f"Heatmap salvo como '{nome_arquivo}'")
+
+def gerar_mapa_politica(ambiente_nome, arquivo_qtable, largura, altura):
+    """
+    Gera um mapa de vetores (quiver plot) mostrando a melhor ação para cada posição.
+    """
+    if not os.path.exists(arquivo_qtable):
+        return
+
+    try:
+        with open(arquivo_qtable, 'rb') as f:
+            q_tabela = pickle.load(f)
+    except:
+        return
+
+    # Matrizes para componentes vetoriais (U, V)
+    # U = componente x (Esquerda/Direita), V = componente y (Cima/Baixo)
+    # Matplotlib quiver usa coordenadas cartesianas (x, y).
+    # Cuidado: grid[y][x].
+    U = [[0.0 for _ in range(largura)] for _ in range(altura)]
+    V = [[0.0 for _ in range(largura)] for _ in range(altura)]
+
+    # Para saber se a célula foi visitada (para não desenhar seta onde não há info)
+    visitado = [[False for _ in range(largura)] for _ in range(altura)]
+
+    # Tracking do "melhor valor" encontrado para a célula, para desambiguar estados
+    melhor_q_na_celula = [[-float('inf') for _ in range(largura)] for _ in range(altura)]
+
+    # Plot
+    plt.figure(figsize=(10, 8))
+
+    # Ajuste dos vetores para origin='upper' (coordenadas de matriz/imagem)
+    # N: quer ir para y menor (topo). Vetor (0, -1).
+    # S: quer ir para y maior (baixo). Vetor (0, 1).
+    # E: quer ir para x maior (direita). Vetor (1, 0).
+    # O: quer ir para x menor (esquerda). Vetor (-1, 0).
+
+    action_vectors_matrix = {
+        'N': (0, -1),
+        'S': (0, 1),
+        'E': (1, 0),
+        'O': (-1, 0)
+    }
+
+    # Popular matrizes U e V
+    for key_tuple, actions in q_tabela.items():
+        try:
+            state_dict = dict(key_tuple)
+            x = state_dict.get('x', -1)
+            y = state_dict.get('y', -1)
+        except: continue
+
+        if 0 <= x < largura and 0 <= y < altura and actions:
+            best_action = max(actions, key=actions.get)
+            max_val = actions[best_action]
+
+            if max_val > melhor_q_na_celula[y][x]:
+                melhor_q_na_celula[y][x] = max_val
+                dx, dy = action_vectors_matrix.get(best_action, (0,0))
+                U[y][x] = dx
+                V[y][x] = dy
+                visitado[y][x] = True
+
+    plt.imshow([[0 for _ in range(largura)] for _ in range(altura)], cmap='Greys', origin='upper', alpha=0.1)
+
+    # Meshgrid para as posições das setas
+    # Note que meshgrid(x, y) retorna matrizes onde X varia nas colunas e Y nas linhas
+    import numpy as np
+    try:
+        X, Y = np.meshgrid(range(largura), range(altura))
+        plt.quiver(X, Y, U, V, color='r', pivot='mid')
+    except ImportError:
+        # Fallback se numpy não estiver disponivel (requisito diz pandas/matplotlib, numpy é dep transitiva mas vai que...)
+        # Matplotlib geralmente puxa numpy.
+        for y in range(altura):
+            for x in range(largura):
+                if visitado[y][x]:
+                    dx = U[y][x]
+                    dy = V[y][x]
+                    # plt.arrow(x, y, dx*0.3, dy*0.3, head_width=0.2, color='r')
+                    # Arrow é chato de centralizar, quiver é melhor.
+                    # Mas se falhar, não plotamos nada complexo.
+                    pass
+
+    plt.title(f'Mapa de Política (Direção Preferida) - {ambiente_nome}')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.grid(True, linestyle=':', alpha=0.6)
+
+    # Inverter eixo Y para coincidir com 'upper' se não usar imshow
+    # Mas como usamos imshow com origin='upper', os eixos já estão certos (0 no topo).
+
+    nome_arquivo = f"{ambiente_nome}_politica.png"
+    plt.savefig(nome_arquivo)
+    plt.close()
+    print(f"Mapa de Política salvo como '{nome_arquivo}'")
