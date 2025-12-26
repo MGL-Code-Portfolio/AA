@@ -21,6 +21,7 @@ class MotorDeSimulacao:
             agente.reset_stats() 
             # Regista a posição inicial como visitada
             agente.stats["celulas_visitadas"].add(agente.posicao)
+            agente.stats["visitas_posicao"][agente.posicao] = agente.stats["visitas_posicao"].get(agente.posicao, 0) + 1
 
         
         while self.ambiente.passo_atual < max_passos:
@@ -38,6 +39,7 @@ class MotorDeSimulacao:
                 
                 agente.stats["passos_episodio"] += 1
                 agente.stats["celulas_visitadas"].add(agente.posicao)
+                agente.stats["visitas_posicao"][agente.posicao] = agente.stats["visitas_posicao"].get(agente.posicao, 0) + 1
                 
                 
                 if recompensa == -0.5:
@@ -52,3 +54,8 @@ class MotorDeSimulacao:
 
             if terminou_simulacao:
                 break
+
+        # Notificar políticas do fim do episódio (ex: para Novelty Search)
+        for agente in self.ambiente.agentes:
+            if hasattr(agente.politica, 'finalizar_episodio'):
+                agente.politica.finalizar_episodio(agente)

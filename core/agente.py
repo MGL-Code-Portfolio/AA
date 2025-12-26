@@ -20,14 +20,16 @@ class Agente:
         self.stats = {
             "colisoes": 0,
             "celulas_visitadas": set(), #da save nas cordenadas visitadas
-            "passos_episodio": 0
+            "passos_episodio": 0,
+            "visitas_posicao": {} # Track visitation frequency: (x, y) -> count
         }
 
     def reset_stats(self):
         self.stats = {
             "colisoes": 0,
             "celulas_visitadas": set(),
-            "passos_episodio": 0
+            "passos_episodio": 0,
+            "visitas_posicao": {}
         }
         self.recompensa_acumulada = 0
         self.posicao = (0, 0)

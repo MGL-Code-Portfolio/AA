@@ -15,10 +15,11 @@ from dominio.actuador_mover import ActuadorMover
 from dominio.politica_qlearning import PoliticaQlearning
 from dominio.politica_fixa import PoliticaFixa           
 from dominio.politica_aleatoria import PoliticaAleatoria 
+from dominio.politica_novelty import PoliticaNovelty
 
 from dominio.sensor_farol import SensorDireccaoFarol
 from dominio.sensor_comum import SensorPosicao
-from simulacao.visualizar_resultados import plot_curva_aprendizagem, gerar_heatmap_qtable
+from simulacao.visualizar_resultados import plot_curva_aprendizagem, gerar_heatmap_qtable, plot_comparacao_politicas, gerar_heatmap_exploracao
 from dominio.sensor_recolecao import SensorEstadoInterno, SensorVisaoRecurso
 
 def limpar_consola():
@@ -42,7 +43,8 @@ def menu_configuracao():
     print("   1. Q-Learning")
     print("   2. Política Fixa")
     print("   3. Aleatória")
-    escolha_pol = input("   >>> Opção (1-3): ")
+    print("   4. Novelty Search")
+    escolha_pol = input("   >>> Opção (1-4): ")
 
     #Parâmetros do Mundo
     try:
@@ -61,7 +63,7 @@ def menu_configuracao():
 
     # 5. Episódios de Treino, só pergunta se for necessário treinar
     episodios = 0
-    if modo_exec in ['1', '2'] and escolha_pol == '1':
+    if modo_exec in ['1', '2'] and escolha_pol in ['1', '4']:
         try:
             episodios = int(input("\n   >>> Nº Episódios Treino (default 200): ") or 200)
         except: episodios = 200
@@ -85,20 +87,24 @@ def criar_ambiente_e_agente(tipo_amb, tipo_pol, largura, altura, n_agentes):
     # loop para criar Agentes
     for i in range(n_agentes):
         sensores = []
+        # Generalização: Remover SensorPosicao para forçar uso de sensores relativos
+
         if tipo_amb == '1':
             sensores.append(SensorDireccaoFarol())
-            sensores.append(SensorPosicao()) 
+            # sensores.append(SensorPosicao()) # REMOVIDO para generalização
         elif tipo_amb == '2':
-            sensores.append(SensorPosicao())
-            #sensores.append(SensorDireccaoFarol())
+            # sensores.append(SensorPosicao()) # REMOVIDO para generalização
+            sensores.append(SensorDireccaoFarol()) # Adicionado para navegação relativa
         elif tipo_amb == '3':
-            sensores.append(SensorPosicao())
+            # sensores.append(SensorPosicao()) # REMOVIDO para generalização
             sensores.append(SensorEstadoInterno())
             sensores.append(SensorVisaoRecurso())
 
         accoes = ['N', 'S', 'E', 'O']
         if tipo_pol == '1': politica = PoliticaQlearning(accoes_possiveis=accoes)
         elif tipo_pol == '2': politica = PoliticaFixa()
+        elif tipo_pol == '3': politica = PoliticaAleatoria(accoes_possiveis=accoes)
+        elif tipo_pol == '4': politica = PoliticaNovelty(accoes_possiveis=accoes)
         else: politica = PoliticaAleatoria(accoes_possiveis=accoes)
 
         agente = Agente(id_agente=i+1, politica=politica)
@@ -154,31 +160,40 @@ def main():
     env = criar_ambiente_e_agente(tipo_amb, tipo_pol, w, h, n_agentes)
     gui = VisualizadorGUI(w, h)
     motor = MotorDeSimulacao(env, visualizador=gui)
-    logger = Logger(env.__class__.__name__ + "_simulacao.csv")
 
-    # CARREGAR Q-TABLE SE EXISTIR E FOR Q-LEARNING
-    if tipo_pol == '1':
+    nome_amb = env.__class__.__name__
+    nome_pol = "QLearning"
+    if tipo_pol == '4': nome_pol = "Novelty"
+    elif tipo_pol == '3': nome_pol = "Aleatorio"
+    elif tipo_pol == '2': nome_pol = "Fixo"
+
+    csv_filename = f"{nome_amb}_{nome_pol}_simulacao.csv"
+    logger = Logger(csv_filename)
+
+    # CARREGAR Q-TABLE SE EXISTIR E FOR Q-LEARNING OU NOVELTY
+    # Novelty herda de QLearning, então pode usar persistência também
+    if tipo_pol in ['1', '4']:
         # Verifica se existe pelo menos um ficheiro para o primeiro agente
-        exemplo_ficheiro = f"qtable_{env.__class__.__name__}_ag1.pkl"
+        exemplo_ficheiro = f"qtable_{nome_amb}_{nome_pol}_ag1.pkl"
         carregar = False
-        if os.path.exists(exemplo_ficheiro) or (n_agentes > 0 and os.path.exists(f"qtable_{env.__class__.__name__}_ag1.pkl")):
-             resp = input(f"\n[PERSISTÊNCIA] Encontrada tabela salva. Deseja carregar? (s/n): ")
+        if os.path.exists(exemplo_ficheiro):
+             resp = input(f"\n[PERSISTÊNCIA] Encontrada tabela salva ({exemplo_ficheiro}). Deseja carregar? (s/n): ")
              if resp.lower() == 's':
                  carregar = True
 
         if carregar:
             for ag in env.agentes:
-                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
+                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
                 if hasattr(ag.politica, 'carregar_tabela'):
                     ag.politica.carregar_tabela(nome_fich)
 
     # auxiliares para decidir fases
-    executar_treino = (modo_exec in ['1', '2']) and (tipo_pol == '1')
+    executar_treino = (modo_exec in ['1', '2']) and (tipo_pol in ['1', '4'])
     executar_teste = (modo_exec in ['1', '3'])
 
     #  FASE 1: APRENDIZAGEM 
     if executar_treino: 
-        print(f"\n[MODO APRENDIZAGEM] A executar {eps} episódios com {n_agentes} agentes...")
+        print(f"\n[MODO APRENDIZAGEM] A executar {eps} episódios com {n_agentes} agentes ({nome_pol})...")
         
         for ag in env.agentes:
             ag.politica.modo_treino = True
@@ -193,7 +208,7 @@ def main():
             recompensa_media = sum(a.recompensa_acumulada for a in env.agentes) / n_agentes
             logger.registar_episodio(i, env.passo_atual, recompensa_media, sucesso)
             
-            if i % (eps//10) == 0:
+            if i % (max(1, eps//10)) == 0:
                 print(f"   Progresso: {i}/{eps} | R (Média): {recompensa_media:.1f}")
 
         print(f"[MODO APRENDIZAGEM] Concluído em {time.time()-start:.2f}s")
@@ -203,12 +218,12 @@ def main():
         print("\n[PERSISTÊNCIA] A guardar tabelas Q...")
         for ag in env.agentes:
             if hasattr(ag.politica, 'guardar_tabela'):
-                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
+                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
                 ag.politica.guardar_tabela(nome_fich)
 
     else:
-        if tipo_pol == '1' and modo_exec == '3':
-            print("\n[AVISO] A executar Q-Learning sem treino prévio. O comportamento será aleatório (ou carregado se escolheu sim).")
+        if tipo_pol in ['1', '4'] and modo_exec == '3':
+            print("\n[AVISO] A executar Learning sem treino prévio. O comportamento será aleatório (ou carregado).")
 
     # FASE 2: TESTE E AVALIAÇÃO
     if executar_teste:
@@ -221,10 +236,12 @@ def main():
         for ag in env.agentes:
             if hasattr(ag.politica, 'modo_treino'):
                 ag.politica.modo_treino = False
-                ag.politica.epsilon = 0.0 # desativar exploração
+                if hasattr(ag.politica, 'epsilon'):
+                     ag.politica.epsilon = 0.0 # desativar exploração
 
         historico_testes = []
-        num_testes = 1 
+        num_testes = 1 # Para teste visual basta 1 ou poucos
+        if modo_exec == '3' and not executar_treino: num_testes = 5
         
         print(f"A executar {num_testes} episódios de teste...")
         
@@ -257,19 +274,28 @@ def main():
         apresentar_metricas_finais(historico_testes, tipo_amb)
     
     # FASE 3: VISUALIZAÇÃO DOS RESULTADOS DE TREINO 
-    if executar_treino or (tipo_pol == '1' and os.path.exists(f"qtable_{env.__class__.__name__}_ag1.pkl")):
+    if executar_treino or (tipo_pol in ['1', '4'] and carregar):
         print("\n[VISUALIZAÇÃO] A gerar gráficos...")
         if executar_treino:
-            plot_curva_aprendizagem("Ambiente_Farol","AmbienteFarol_simulacao.csv")
-            plot_curva_aprendizagem("Ambiente_Labirinto","AmbienteLabirinto_simulacao.csv")
-            plot_curva_aprendizagem("Ambiente_Recolecao","AmbienteRecolecao_simulacao.csv")
+            # Gráfico de curva de aprendizagem
+            plot_curva_aprendizagem(f"{nome_amb}_{nome_pol}", csv_filename)
 
-        # Gerar Heatmaps para os agentes Q-Learning
-        if tipo_pol == '1':
+            # Tenta plotar comparação se houver outros CSVs
+            # Ex: Procura csvs padrão na pasta
+            lista_csvs = [f for f in os.listdir('.') if f.endswith('_simulacao.csv') and nome_amb in f]
+            if len(lista_csvs) > 1:
+                plot_comparacao_politicas(lista_csvs)
+
+        # Gerar Heatmaps para os agentes Q-Learning / Novelty
+        if tipo_pol in ['1', '4']:
             for ag in env.agentes:
-                nome_fich = f"qtable_{env.__class__.__name__}_ag{ag.id}.pkl"
-                nome_amb_agente = f"{env.__class__.__name__}_Agente{ag.id}"
+                # Heatmap Q-Table
+                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
+                nome_amb_agente = f"{nome_amb}_{nome_pol}_Agente{ag.id}"
                 gerar_heatmap_qtable(nome_amb_agente, nome_fich, w, h)
+
+                # Heatmap Exploração Real (Densidade)
+                gerar_heatmap_exploracao(ag, w, h, f"{nome_amb_agente}_exploracao")
 
     print("\nSimulação Terminada.")
 
