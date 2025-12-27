@@ -14,19 +14,19 @@ class PoliticaNovelty(PoliticaQlearning):
         """
         Em vez de atualizar a Q-Table imediatamente com a recompensa externa,
         guardamos a transição para processar no final do episódio com a recompensa intrínseca.
+        Acumulamos também a recompensa externa.
         """
         if self.modo_treino:
-            self.buffer_episodio.append((obs_antiga, accao, obs_nova))
+            self.buffer_episodio.append((obs_antiga, accao, recompensa, obs_nova))
 
-    def _calcular_centroide(self, celulas_visitadas):
-        """Calcula o centro de massa da trajetória."""
-        if not celulas_visitadas:
-            return (0, 0)
-
-        soma_x = sum(c[0] for c in celulas_visitadas)
-        soma_y = sum(c[1] for c in celulas_visitadas)
-        n = len(celulas_visitadas)
-        return (soma_x / n, soma_y / n)
+    def _calcular_centroide(self, agente):
+        """
+        Calcula o comportamento do agente.
+        Modificado para usar apenas a posição final do agente,
+        que é mais robusto para tarefas de navegação com objetivos.
+        """
+        # Usa a posição final do agente
+        return agente.posicao
 
     def _distancia_euclidiana(self, p1, p2):
         return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
@@ -40,8 +40,8 @@ class PoliticaNovelty(PoliticaQlearning):
             self.buffer_episodio.clear()
             return
 
-        # 1. Caracterizar o comportamento (Centroide da trajetória)
-        comportamento_atual = self._calcular_centroide(agente.stats['celulas_visitadas'])
+        # 1. Caracterizar o comportamento (Posição Final)
+        comportamento_atual = self._calcular_centroide(agente)
 
         # 2. Calcular Novidade (Distância média para os k vizinhos mais próximos no arquivo)
         recompensa_intrinsica = 0.0
@@ -66,15 +66,19 @@ class PoliticaNovelty(PoliticaQlearning):
             # Remove o mais antigo ou aleatório? Vamos remover o mais antigo (FIFO) para adaptação contínua
             self.arquivo_comportamentos.pop(0)
 
-        # 4. Atualizar Q-Table com a Recompensa Intrínseca
-        # Replay do episódio. A recompensa de novidade é atribuída apenas ao último passo
-        # para evitar reforçar comportamentos de 'ficar parado' que dominam a trajetória.
-        # Iteramos de trás para frente para permitir que o valor propague para os estados anteriores num único passo.
-        for i, (obs, accao, obs_nova) in enumerate(reversed(self.buffer_episodio)):
+        # 4. Calcular Recompensa Externa Acumulada
+        recompensa_externa_total = sum(r for _, _, r, _ in self.buffer_episodio)
+
+        # 5. Atualizar Q-Table
+        # Replay do episódio. A recompensa combinada é atribuída apenas ao último passo.
+        recompensa_final = recompensa_intrinsica + recompensa_externa_total
+
+        # Iteramos de trás para frente para permitir que o valor propague
+        for i, (obs, accao, r_ext, obs_nova) in enumerate(reversed(self.buffer_episodio)):
             r = 0.0
             # Na iteração reversa, o primeiro elemento (i=0) corresponde ao último passo do episódio
             if i == 0:
-                r = recompensa_intrinsica
+                r = recompensa_final
 
             super().atualizar(obs, accao, r, obs_nova)
 

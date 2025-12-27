@@ -100,6 +100,10 @@ def criar_ambiente_e_agente(tipo_amb, tipo_pol, largura, altura, n_agentes):
             sensores.append(SensorEstadoInterno())
             sensores.append(SensorVisaoRecurso())
 
+        # FIX: Novelty Search precisa de posição (state aliasing)
+        if tipo_pol == '4':
+            sensores.append(SensorPosicao())
+
         accoes = ['N', 'S', 'E', 'O']
         if tipo_pol == '1': politica = PoliticaQlearning(accoes_possiveis=accoes)
         elif tipo_pol == '2': politica = PoliticaFixa()
