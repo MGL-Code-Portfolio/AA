@@ -11,6 +11,7 @@ class Agente:
         self.sensores: List[Sensor] = []
         self.actuador: Actuador = None
         self.posicao = (0, 0)
+        self.posicao_inicial = (0, 0)
         
         # Aprendizagem
         self.recompensa_acumulada = 0.0
@@ -32,6 +33,7 @@ class Agente:
             "visitas_posicao": {}
         }
         self.recompensa_acumulada = 0
+        self.posicao = getattr(self, 'posicao_inicial', (0, 0))
         if hasattr(self, 'tem_recurso'): self.tem_recurso = False
 
     def instala(self, sensor: Sensor):
