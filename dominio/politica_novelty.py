@@ -67,12 +67,14 @@ class PoliticaNovelty(PoliticaQlearning):
             self.arquivo_comportamentos.pop(0)
 
         # 4. Atualizar Q-Table com a Recompensa Intrínseca
-        # Replay do episódio aplicando a recompensa de novidade em cada passo
-        # Nota: Pode-se usar a recompensa apenas no último passo ou distribuída.
-        # Aqui vamos usar a mesma recompensa para toda a trajetória (crédito episódico).
-        for obs, accao, obs_nova in self.buffer_episodio:
-             # Chama a atualização da classe pai (Q-Learning) mas com a recompensa de novidade
-            super().atualizar(obs, accao, recompensa_intrinsica, obs_nova)
+        # Replay do episódio. A recompensa de novidade é atribuída apenas ao último passo
+        # para evitar reforçar comportamentos de 'ficar parado' que dominam a trajetória.
+        for i, (obs, accao, obs_nova) in enumerate(self.buffer_episodio):
+            r = 0.0
+            if i == len(self.buffer_episodio) - 1:
+                r = recompensa_intrinsica
+
+            super().atualizar(obs, accao, r, obs_nova)
 
         # Limpar buffer para o próximo episódio
         self.buffer_episodio.clear()
