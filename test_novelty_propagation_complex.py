@@ -29,6 +29,7 @@ class TestNoveltyPropagationComplex(unittest.TestCase):
         # Finalize
         mock_agent = MagicMock()
         mock_agent.posicao = (2, 2)
+        mock_agent.stats = {'visitas_posicao': {(0,0):1, (1,1):1, (2,2):1}}
         policy.finalizar_episodio(mock_agent)
 
         # Check Q-Values

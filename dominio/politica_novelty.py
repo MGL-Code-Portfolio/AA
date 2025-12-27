@@ -21,12 +21,16 @@ class PoliticaNovelty(PoliticaQlearning):
 
     def _calcular_centroide(self, agente):
         """
-        Calcula o comportamento do agente.
-        Modificado para usar apenas a posição final do agente,
-        que é mais robusto para tarefas de navegação com objetivos.
+        Calcula o comportamento do agente usando a média de todas as posições visitadas.
+        Isso permite distinguir trajetórias diferentes mesmo que terminem no mesmo local.
         """
-        # Usa a posição final do agente
-        return agente.posicao
+        if not agente.stats['visitas_posicao']:
+            return agente.posicao
+
+        xs = [p[0] for p in agente.stats['visitas_posicao'].keys()]
+        ys = [p[1] for p in agente.stats['visitas_posicao'].keys()]
+
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
 
     def _distancia_euclidiana(self, p1, p2):
         return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
@@ -66,19 +70,34 @@ class PoliticaNovelty(PoliticaQlearning):
             # Remove o mais antigo ou aleatório? Vamos remover o mais antigo (FIFO) para adaptação contínua
             self.arquivo_comportamentos.pop(0)
 
-        # 4. Calcular Recompensa Externa Acumulada
+        # 4. Calcular Recompensa Externa Acumulada e Escalonar Novidade
         recompensa_externa_total = sum(r for _, _, r, _ in self.buffer_episodio)
 
+        # Escalonamento da Novidade (Fator 2.0)
+        recompensa_intrinsica *= 2.0
+
         # 5. Atualizar Q-Table
-        # Replay do episódio. A recompensa combinada é atribuída apenas ao último passo.
+        # Combinação de Metas
         recompensa_final = recompensa_intrinsica + recompensa_externa_total
 
         # Iteramos de trás para frente para permitir que o valor propague
         for i, (obs, accao, r_ext, obs_nova) in enumerate(reversed(self.buffer_episodio)):
-            r = 0.0
-            # Na iteração reversa, o primeiro elemento (i=0) corresponde ao último passo do episódio
+            # Distribuição de Recompensa (Reward Shaping)
+            # Atribui 10% da novidade a todos os passos para criar gradiente
+            # e mantém a recompensa externa original do passo
+            r = r_ext + (recompensa_intrinsica * 0.1)
+
+            # No último passo (primeiro da iteração reversa), adiciona o restante da novidade?
+            # O prompt diz "não dês a recompensa apenas ao último passo", mas também
+            # "Garante que a recompensa_final é a soma da novidade com a recompensa_externa_total acumulada"
+            # Se já demos 0.1*novelty em cada passo, o total distribuído é (steps * 0.1 * novelty).
+            # Para garantir que o último passo tenha um "alvo", podemos adicionar a novidade completa
+            # ou uma fração maior. Dado o pedido de "combinação de metas", vamos somar
+            # a novidade total ao último passo, além do shaping, para garantir convergência forte?
+            # Ou o prompt implica que "recompensa_final" é o que importa conceptualmente?
+            # Vamos seguir a lógica: shaping em todos, e o grande bolo no final.
             if i == 0:
-                r = recompensa_final
+                r += recompensa_intrinsica
 
             super().atualizar(obs, accao, r, obs_nova)
 
