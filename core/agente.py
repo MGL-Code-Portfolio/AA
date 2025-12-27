@@ -32,7 +32,7 @@ class Agente:
             "visitas_posicao": {}
         }
         self.recompensa_acumulada = 0
-        self.posicao = (0, 0)
+        # self.posicao = (0, 0) # Removido para respeitar posição inicial do ambiente
         if hasattr(self, 'tem_recurso'): self.tem_recurso = False
 
     def instala(self, sensor: Sensor):
