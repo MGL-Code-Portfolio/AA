@@ -62,6 +62,13 @@ class AmbienteLabirinto(Ambiente):
                         
         return False 
 
+    def reset(self):
+        """Reseta o ambiente e a posição dos agentes para o início."""
+        for agente in self.agentes:
+            agente.posicao = self.inicio_pos
+            agente.reset_stats()
+        self.objetivo_alcancado = False
+
     def atualizacao(self):
         pass 
 
