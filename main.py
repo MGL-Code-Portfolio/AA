@@ -216,7 +216,7 @@ def main():
                 print(f"   Progresso: {i}/{eps} | R (Média): {recompensa_media:.1f}")
 
         print(f"[MODO APRENDIZAGEM] Concluído em {time.time()-start:.2f}s")
-        logger.exportar_csv()
+        csv_exportado = logger.exportar_csv()
 
         # GUARDAR Q-TABLE NO FIM DO TREINO
         print("\n[PERSISTÊNCIA] A guardar tabelas Q...")
@@ -282,7 +282,9 @@ def main():
         print("\n[VISUALIZAÇÃO] A gerar gráficos...")
         if executar_treino:
             # Gráfico de curva de aprendizagem
-            plot_curva_aprendizagem(f"{nome_amb}_{nome_pol}", csv_filename)
+            # Usa o nome do arquivo que foi realmente exportado (pode ser backup)
+            arquivo_para_plot = csv_exportado if csv_exportado else csv_filename
+            plot_curva_aprendizagem(f"{nome_amb}_{nome_pol}", arquivo_para_plot)
 
             # Tenta plotar comparação se houver outros CSVs
             # Ex: Procura csvs padrão na pasta

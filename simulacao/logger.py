@@ -25,7 +25,7 @@ class Logger:
 
     def exportar_csv(self):
         if not self.historico:
-            return
+            return None
         
         chaves = self.historico[0].keys()
         
@@ -35,6 +35,7 @@ class Logger:
                 writer.writeheader()
                 writer.writerows(self.historico)
             print(f"\n[LOGGER] Dados exportados com sucesso para: {self.nome_ficheiro}")
+            return self.nome_ficheiro
         except IOError as e:
             print(f"[LOGGER] Erro ao gravar CSV '{self.nome_ficheiro}': {e}")
             # Tentar salvar com outro nome
@@ -45,5 +46,7 @@ class Logger:
                     writer.writeheader()
                     writer.writerows(self.historico)
                  print(f"[LOGGER] Dados salvos em ficheiro alternativo: {novo_nome}")
+                 return novo_nome
             except IOError as e2:
                  print(f"[LOGGER] CRÍTICO: Não foi possível salvar dados nem no backup: {e2}")
+                 return None
