@@ -11,6 +11,7 @@ class Ambiente(ABC):
 
     def adicionar_agente(self, agente: Agente, pos_inicial=(0,0)):
         agente.posicao = pos_inicial
+        agente.posicao_inicial = pos_inicial
         self.agentes.append(agente)
 
     @abstractmethod
