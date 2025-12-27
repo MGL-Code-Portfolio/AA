@@ -287,14 +287,8 @@ def main():
             plot_curva_aprendizagem(f"{nome_amb}_{nome_pol}", arquivo_para_plot)
 
             # Tenta plotar comparação se houver outros CSVs
-            # Ex: Procura csvs padrão na pasta (Estaticamente)
-            politicas_possiveis = ["QLearning", "Fixo", "Aleatorio", "Novelty"]
-            lista_csvs = []
-            for p in politicas_possiveis:
-                f_name = f"{nome_amb}_{p}_simulacao.csv"
-                if os.path.exists(f_name):
-                    lista_csvs.append(f_name)
-
+            # Ex: Procura csvs padrão na pasta
+            lista_csvs = [f for f in os.listdir('.') if f.endswith('_simulacao.csv') and nome_amb in f]
             if len(lista_csvs) > 1:
                 plot_comparacao_politicas(lista_csvs)
 
