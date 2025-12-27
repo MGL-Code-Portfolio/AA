@@ -33,6 +33,10 @@ class TestNoveltyPropagation(unittest.TestCase):
         # Mocking Agent for Novelty Calculation (centroid)
         mock_agent = MagicMock()
         mock_agent.posicao = (2, 0)
+        # Mock stats required by new centroid calculation
+        mock_agent.stats = {
+            'visitas_posicao': {(0,0): 1, (1,0): 1, (2,0): 1}
+        }
 
         policy.finalizar_episodio(mock_agent)
 
