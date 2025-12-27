@@ -3,9 +3,10 @@ import random
 from collections import deque # usado para o algoritmo de busca (BFS)
 
 class AmbienteLabirinto(Ambiente):
-    def __init__(self, largura, altura, densidade_paredes=0.25):
+    def __init__(self, largura, altura, densidade_paredes=0.25, seed=42):
         super().__init__(largura, altura)
         
+        self.rng = random.Random(seed)
         self.inicio_pos = (0, 0)
         self.saida_pos = (largura - 1, altura - 1)
         self.obstaculos = set()
@@ -35,7 +36,7 @@ class AmbienteLabirinto(Ambiente):
                 if (x, y) == self.inicio_pos or (x, y) == self.saida_pos:
                     continue
                 
-                if random.random() < self.densidade:
+                if self.rng.random() < self.densidade:
                     self.obstaculos.add((x, y))
 
     def existe_caminho(self): #bfs para verificar se há caminho do inicio ao fim
