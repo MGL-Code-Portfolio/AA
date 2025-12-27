@@ -2,8 +2,9 @@ from core.ambiente import Ambiente
 import random
 
 class AmbienteRecolecao(Ambiente):
-    def __init__(self, largura, altura, num_recursos=5):
+    def __init__(self, largura, altura, num_recursos=5, seed=42):
         super().__init__(largura, altura)
+        self.rng = random.Random(seed)
         self.ninho_pos = (0, 0) # ninho no canto superior esquerdo
         self.num_recursos_inicial = num_recursos
         self.recursos = set()
@@ -13,8 +14,8 @@ class AmbienteRecolecao(Ambiente):
     def _gerar_recursos(self):
         """Gera recursos em posições aleatórias (sem sobrepor ninho)"""
         while len(self.recursos) < self.num_recursos_inicial:
-            rx = random.randint(0, self.largura - 1)
-            ry = random.randint(0, self.altura - 1)
+            rx = self.rng.randint(0, self.largura - 1)
+            ry = self.rng.randint(0, self.altura - 1)
             if (rx, ry) != self.ninho_pos:
                 self.recursos.add((rx, ry))
 
