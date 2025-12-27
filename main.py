@@ -171,14 +171,23 @@ def main():
     elif tipo_pol == '3': nome_pol = "Aleatorio"
     elif tipo_pol == '2': nome_pol = "Fixo"
 
-    csv_filename = f"{nome_amb}_{nome_pol}_simulacao.csv"
+    # Definir pasta de saída baseada no ambiente
+    if "Farol" in nome_amb: folder = "farol"
+    elif "Labirinto" in nome_amb: folder = "labirinto"
+    elif "Recolecao" in nome_amb: folder = "recolecao"
+    else: folder = "outros"
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    csv_filename = os.path.join(folder, f"{nome_amb}_{nome_pol}_simulacao.csv")
     logger = Logger(csv_filename)
 
     # CARREGAR Q-TABLE SE EXISTIR E FOR Q-LEARNING OU NOVELTY
     # Novelty herda de QLearning, então pode usar persistência também
     if tipo_pol in ['1', '4']:
         # Verifica se existe pelo menos um ficheiro para o primeiro agente
-        exemplo_ficheiro = f"qtable_{nome_amb}_{nome_pol}_ag1.pkl"
+        exemplo_ficheiro = os.path.join(folder, f"qtable_{nome_amb}_{nome_pol}_ag1.pkl")
         carregar = False
         if os.path.exists(exemplo_ficheiro):
              resp = input(f"\n[PERSISTÊNCIA] Encontrada tabela salva ({exemplo_ficheiro}). Deseja carregar? (s/n): ")
@@ -187,7 +196,7 @@ def main():
 
         if carregar:
             for ag in env.agentes:
-                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
+                nome_fich = os.path.join(folder, f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl")
                 if hasattr(ag.politica, 'carregar_tabela'):
                     ag.politica.carregar_tabela(nome_fich)
 
@@ -222,7 +231,7 @@ def main():
         print("\n[PERSISTÊNCIA] A guardar tabelas Q...")
         for ag in env.agentes:
             if hasattr(ag.politica, 'guardar_tabela'):
-                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
+                nome_fich = os.path.join(folder, f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl")
                 ag.politica.guardar_tabela(nome_fich)
 
     else:
@@ -284,20 +293,20 @@ def main():
             # Gráfico de curva de aprendizagem
             # Usa o nome do arquivo que foi realmente exportado (pode ser backup)
             arquivo_para_plot = csv_exportado if csv_exportado else csv_filename
-            plot_curva_aprendizagem(f"{nome_amb}_{nome_pol}", arquivo_para_plot)
+            plot_curva_aprendizagem(os.path.join(folder, f"{nome_amb}_{nome_pol}"), arquivo_para_plot)
 
             # Tenta plotar comparação se houver outros CSVs
             # Ex: Procura csvs padrão na pasta
-            lista_csvs = [f for f in os.listdir('.') if f.endswith('_simulacao.csv') and nome_amb in f]
+            lista_csvs = [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith('_simulacao.csv') and nome_amb in f]
             if len(lista_csvs) > 1:
-                plot_comparacao_politicas(lista_csvs)
+                plot_comparacao_politicas(lista_csvs, nome_arquivo_saida=os.path.join(folder, "comparacao_politicas.png"))
 
         # Gerar Heatmaps para os agentes Q-Learning / Novelty
         if tipo_pol in ['1', '4']:
             for ag in env.agentes:
                 # Heatmap Q-Table
-                nome_fich = f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl"
-                nome_amb_agente = f"{nome_amb}_{nome_pol}_Agente{ag.id}"
+                nome_fich = os.path.join(folder, f"qtable_{nome_amb}_{nome_pol}_ag{ag.id}.pkl")
+                nome_amb_agente = os.path.join(folder, f"{nome_amb}_{nome_pol}_Agente{ag.id}")
                 gerar_heatmap_qtable(nome_amb_agente, nome_fich, w, h)
 
                 # Heatmap Exploração Real (Densidade)

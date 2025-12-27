@@ -30,7 +30,7 @@ def plot_curva_aprendizagem(nome_base, ficheiro_csv):
     plt.close()
     print(f"Gráfico da curva de aprendizagem salvo como '{nome_grafico}'")
 
-def plot_comparacao_politicas(lista_csvs):
+def plot_comparacao_politicas(lista_csvs, nome_arquivo_saida="comparacao_politicas.png"):
     """
     Gera um gráfico comparativo das curvas de aprendizado (média móvel) de vários arquivos CSV.
     """
@@ -45,7 +45,7 @@ def plot_comparacao_politicas(lista_csvs):
 
             # Identificar nome da política pelo nome do arquivo
             # Ex: AmbienteFarol_QLearning_simulacao.csv -> QLearning
-            nome_legenda = ficheiro.replace("_simulacao.csv", "")
+            nome_legenda = os.path.basename(ficheiro).replace("_simulacao.csv", "")
 
             janela = max(1, len(dados) // 20)
             media_movel = dados['Recompensa'].rolling(window=janela, min_periods=1).mean()
@@ -61,9 +61,9 @@ def plot_comparacao_politicas(lista_csvs):
     plt.legend()
     plt.tight_layout()
 
-    plt.savefig("comparacao_politicas.png")
+    plt.savefig(nome_arquivo_saida)
     plt.close()
-    print("Gráfico comparativo salvo como 'comparacao_politicas.png'")
+    print(f"Gráfico comparativo salvo como '{nome_arquivo_saida}'")
 
 def gerar_heatmap_exploracao(agente, largura, altura, nome_base):
     """
